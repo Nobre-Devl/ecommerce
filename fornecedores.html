@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fornecedores - E-Com+</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: '#5b21b6',
+            secondary: '#f59e0b',
+            textMain: '#1e293b',
+            textSecondary: '#64748b',
+            background: '#f1f5f9',
+            error: '#dc2626',
+            success: '#16a34a',
+            warning: '#f97316'
+          }
+        }
+      }
+    };
+  </script>
+</head>
+
+<body class="bg-background text-textMain dark:bg-slate-950 dark:text-slate-100 transition-all duration-300">
+<div id="app" class="flex min-h-screen">
+
+  <!-- Sidebar -->
+  <aside class="w-72 bg-white dark:bg-slate-900 shadow-xl flex flex-col border-r dark:border-slate-800 transition-all duration-300">
+    <div class="flex items-center justify-between px-6 py-5 border-b dark:border-slate-800">
+      <h1 class="text-2xl font-extrabold text-primary tracking-tight">E-Com+</h1>
+      <button @click="toggleTheme" class="p-2 rounded-xl bg-secondary/20 text-secondary hover:bg-secondary hover:text-white transition-all">
+        <svg v-if="isDark" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none"
+          viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 3v1m0 16v1m9-9h1M4 12H3m15.364-6.364l.707.707M5.636 18.364l-.707.707m12.728 0l.707-.707M5.636 5.636l-.707-.707M12 5a7 7 0 000 14 7 7 0 000-14z" />
+        </svg>
+        <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="currentColor"
+          viewBox="0 0 24 24">
+          <path d="M21.752 15.002A9.718 9.718 0 0112.004 22C6.478 22 2 17.523 2 12a9.999 9.999 0 0112.728-9.542.75.75 0 01.202 1.314A7.481 7.481 0 0014.5 12a7.478 7.478 0 007.128 4.956.75.75 0 01.124 1.47z" />
+        </svg>
+      </button>
+    </div>
+
+    <nav class="flex-1 p-5 space-y-3">
+      <a href="index.html" :class="activeMenu==='Dashboard' ? 'bg-secondary text-white' : 'text-textSecondary dark:text-slate-400 hover:bg-secondary/10 hover:text-secondary'"
+        class="flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all">📊 Dashboard</a>
+      <a href="produtos.html" :class="activeMenu==='Produtos' ? 'bg-secondary text-white' : 'text-textSecondary dark:text-slate-400 hover:bg-secondary/10 hover:text-secondary'"
+        class="flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all">📦 Produtos</a>
+      <a href="clientes.html" :class="activeMenu==='Clientes' ? 'bg-secondary text-white' : 'text-textSecondary dark:text-slate-400 hover:bg-secondary/10 hover:text-secondary'"
+        class="flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all">👥 Clientes</a>
+      <a href="fornecedores.html" :class="activeMenu==='Fornecedores' ? 'bg-secondary text-white' : 'text-textSecondary dark:text-slate-400 hover:bg-secondary/10 hover:text-secondary'"
+        class="flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all">🏭 Fornecedores</a>
+      <a href="vendas.html" :class="activeMenu==='Vendas' ? 'bg-secondary text-white' : 'text-textSecondary dark:text-slate-400 hover:bg-secondary/10 hover:text-secondary'"
+        class="flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all">💰 Vendas</a>
+    </nav>
+
+    <div class="border-t dark:border-slate-800 p-5 text-sm text-textSecondary dark:text-slate-400">
+      <p>© {{ new Date().getFullYear() }} E-Com+</p>
+    </div>
+  </aside>
+
+  <main class="flex-1 p-10">
+
+    <div class="flex items-center justify-between mb-2">
+      <h2 class="text-3xl font-bold text-primary dark:text-secondary">Fornecedores</h2>
+      <div class="flex gap-2">
+        <button class="bg-secondary text-white px-4 py-2 rounded-xl hover:bg-secondary/80 transition-all shadow">Cadastrar Fornecedor</button>
+      </div>
+    </div>
+
+   <div class="flex gap-2 mb-6">
+      <button @click="viewMode='cards'" :class="viewMode==='cards' ? 'bg-primary text-white' : 'bg-secondary/20 text-secondary'" class="px-3 py-2 rounded-lg font-medium transition-all">Cards</button>
+      <button @click="viewMode='table'" :class="viewMode==='table' ? 'bg-primary text-white' : 'bg-secondary/20 text-secondary'" class="px-3 py-2 rounded-lg font-medium transition-all">Tabela</button>
+    </div>
+
+    <div v-if="viewMode==='cards'" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div v-for="forn in fornecedores" :key="forn.id" class="p-5 bg-white dark:bg-slate-900 rounded-2xl shadow hover:shadow-lg transition-all">
+        <div class="h-32 bg-gradient-to-br from-primary/20 to-secondary/30 rounded-xl mb-3 flex items-center justify-center text-5xl">
+          {{ forn.emoji }}
+        </div>
+        <h3 class="font-bold text-lg">{{ forn.nome }}</h3>
+        <p class="text-textSecondary dark:text-slate-400 text-sm mb-3">{{ forn.contato }}</p>
+        <p class="text-textSecondary dark:text-slate-400 text-sm mb-2">{{ forn.cidade }}</p>
+        <button class="bg-primary hover:bg-secondary text-white px-4 py-2 rounded-lg w-full font-medium transition-all">Ver Detalhes</button>
+      </div>
+    </div>
+
+    <div v-if="viewMode==='table'" class="overflow-x-auto bg-white dark:bg-slate-900 rounded-xl shadow p-4">
+      <table class="min-w-full text-left">
+        <thead class="border-b border-slate-200 dark:border-slate-700">
+          <tr>
+            <th class="px-4 py-2 text-textSecondary dark:text-slate-400">Emoji</th>
+            <th class="px-4 py-2 text-textSecondary dark:text-slate-400">ID</th>
+            <th class="px-4 py-2 text-textSecondary dark:text-slate-400">Nome</th>
+            <th class="px-4 py-2 text-textSecondary dark:text-slate-400">Contato</th>
+            <th class="px-4 py-2 text-textSecondary dark:text-slate-400">Cidade</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="forn in fornecedores" :key="forn.id" class="border-b border-slate-200 dark:border-slate-700 hover:bg-secondary/10 transition-all">
+            <td class="px-4 py-2 text-2xl">{{ forn.emoji }}</td>
+            <td class="px-4 py-2">{{ forn.id }}</td>
+            <td class="px-4 py-2">{{ forn.nome }}</td>
+            <td class="px-4 py-2">{{ forn.contato }}</td>
+            <td class="px-4 py-2">{{ forn.cidade }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </main>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
