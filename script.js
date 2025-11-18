@@ -45,15 +45,12 @@ createApp({
     produtosFiltrados() {
       return this.produtos.filter(p => {
         const buscaOk = p.nome.toLowerCase().includes(this.filtroBusca.toLowerCase());
-
         const dataProduto = p.data ? p.data.split('T')[0] : '';
         const dataInicio = this.filtroDataInicio || '0000-01-01';
         const dataFim = this.filtroDataFim || this.hoje;
         const dataOk = dataProduto >= dataInicio && dataProduto <= dataFim;
-
         const categoriaOk = !this.filtroCategoria || p.categoria === this.filtroCategoria;
         const precoOk = p.preco >= this.filtroPrecoMin && p.preco <= this.filtroPrecoMax;
-
         return buscaOk && dataOk && categoriaOk && precoOk;
       });
     },
@@ -68,6 +65,15 @@ createApp({
   },
 
   mounted() {
+    // --- VERIFICAÇÃO DE SEGURANÇA ---
+    const token = localStorage.getItem('auth-token');
+    if (!token) {
+      alert('Acesso negado. Faça o login primeiro.');
+      window.location.href = 'login.html';
+      return;
+    }
+    // -------------------------------
+
     this.isDark = localStorage.getItem('temaEscuro') === 'true';
     document.documentElement.classList.toggle('dark', this.isDark);
     this.buscarProdutos();
@@ -78,7 +84,6 @@ createApp({
       this.alerta.mensagem = mensagem;
       this.alerta.tipo = tipo;
       this.alerta.visivel = true;
-
       setTimeout(() => {
         this.alerta.visivel = false;
       }, duracao);
@@ -91,14 +96,23 @@ createApp({
     },
 
     async buscarProdutos() {
-      const res = await fetch('http://localhost:2024/produtos');
-      this.produtos = await res.json();
+      const token = localStorage.getItem('auth-token');
+      try {
+        const res = await fetch('http://localhost:2024/produtos', {
+          headers: { 'auth-token': token }
+        });
+        this.produtos = await res.json();
 
-      const precos = this.produtos.map(p => p.preco);
-      this.precoMin = Math.min(...precos, 0);
-      this.precoMax = Math.max(...precos, 100);
-      this.filtroPrecoMin = this.precoMin;
-      this.filtroPrecoMax = this.precoMax;
+        const precos = this.produtos.map(p => p.preco);
+        if (precos.length > 0) {
+            this.precoMin = Math.min(...precos, 0);
+            this.precoMax = Math.max(...precos, 100);
+            this.filtroPrecoMin = this.precoMin;
+            this.filtroPrecoMax = this.precoMax;
+        }
+      } catch (error) {
+        console.error('Erro ao buscar:', error);
+      }
     },
 
     limparFiltros() {
@@ -126,17 +140,41 @@ createApp({
       if (!this.mostrarForm) this.resetarFormulario();
     },
 
-    carregarImagem(event) {
+    // --- CORREÇÃO PRINCIPAL AQUI ---
+    async carregarImagem(event) {
       const file = event.target.files[0];
       if (!file) return;
-      const reader = new FileReader();
-      reader.onload = e => {
-        this.novoProduto.imagem = e.target.result;
+
+      // Opções de compressão
+      const options = {
+        maxSizeMB: 0.5, // Limita a 0.5MB (500KB) para ficar leve
+        maxWidthOrHeight: 1200, // Redimensiona se for muito grande
+        useWebWorker: true
       };
-      reader.readAsDataURL(file);
+
+      try {
+        this.mostrarAlerta('Processando imagem...', 'warning', 2000);
+        
+        // Comprime a imagem usando a biblioteca que está no HTML
+        const compressedFile = await imageCompression(file, options);
+
+        // Converte para Base64
+        const reader = new FileReader();
+        reader.onload = e => {
+          this.novoProduto.imagem = e.target.result;
+        };
+        reader.readAsDataURL(compressedFile);
+
+      } catch (error) {
+        console.error('Erro na imagem:', error);
+        this.mostrarAlerta('Erro ao processar imagem.', 'error');
+      }
     },
+    // -------------------------------
 
     async salvarProduto() {
+      const token = localStorage.getItem('auth-token');
+
       if (!this.novoProduto.data) this.novoProduto.data = new Date().toISOString();
 
       const metodo = this.editando ? 'PUT' : 'POST';
@@ -144,20 +182,28 @@ createApp({
         ? `http://localhost:2024/produtos/${this.produtoEditandoId}`
         : 'http://localhost:2024/produtos';
 
-      const res = await fetch(url, {
-        method: metodo,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(this.novoProduto)
-      });
+      try {
+        const res = await fetch(url, {
+          method: metodo,
+          headers: { 
+            'Content-Type': 'application/json',
+            'auth-token': token
+          },
+          body: JSON.stringify(this.novoProduto)
+        });
 
-      if (res.ok) {
-        const msg = this.editando ? '✅ Produto atualizado!' : '✅ Produto cadastrado!';
-        this.mostrarAlerta(msg, 'success');
-        
-        this.buscarProdutos();
-        this.toggleForm();
-      } else {
-        this.mostrarAlerta('❌ Erro ao salvar produto.', 'error');
+        if (res.ok) {
+          const msg = this.editando ? '✅ Produto atualizado!' : '✅ Produto cadastrado!';
+          this.mostrarAlerta(msg, 'success');
+          
+          this.buscarProdutos();
+          this.toggleForm();
+        } else {
+          const erroData = await res.json();
+          this.mostrarAlerta('❌ ' + (erroData.message || 'Erro ao salvar'), 'error');
+        }
+      } catch (error) {
+        this.mostrarAlerta('❌ Erro de conexão com o servidor', 'error');
       }
     },
 
@@ -169,15 +215,23 @@ createApp({
     },
 
     async excluirProduto(id) {
+      const token = localStorage.getItem('auth-token');
       if (!confirm('Tem certeza que deseja excluir este produto?')) return;
 
-      const res = await fetch(`http://localhost:2024/produtos/${id}`, { method: 'DELETE' });
+      try {
+        const res = await fetch(`http://localhost:2024/produtos/${id}`, { 
+            method: 'DELETE',
+            headers: { 'auth-token': token }
+        });
 
-      if (res.ok) {
-        this.mostrarAlerta('🗑️ Produto excluído!', 'success');
-        this.buscarProdutos();
-      } else {
-        this.mostrarAlerta('❌ Erro ao excluir produto.', 'error');
+        if (res.ok) {
+          this.mostrarAlerta('🗑️ Produto excluído!', 'success');
+          this.buscarProdutos();
+        } else {
+          this.mostrarAlerta('❌ Erro ao excluir produto.', 'error');
+        }
+      } catch (error) {
+        this.mostrarAlerta('❌ Erro de conexão.', 'error');
       }
     },
 
