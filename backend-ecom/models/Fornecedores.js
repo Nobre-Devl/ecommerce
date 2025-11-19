@@ -1,16 +1,15 @@
 const mongoose = require('mongoose');
 
 const FornecedoresSchema = new mongoose.Schema({
-    RazãpSocial: { type: String, required: true },
+    RazaoSocial: { type: String, required: true },
     email: String,
-    telefone: Number,
+    telefone: String,
     endereco: String,
     CNPJ: String,
     dataCadastro: {
         type: Date,
         default: Date.now
     },
-    
     lojaId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Loja',
@@ -18,6 +17,6 @@ const FornecedoresSchema = new mongoose.Schema({
     }
 });
 
-const Fornecedores = mongoose.model('Fornecedores', clienteSchema);
+const Fornecedores = mongoose.model('Fornecedores', FornecedoresSchema);
 
 module.exports = Fornecedores;
