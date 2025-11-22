@@ -17,9 +17,33 @@ const lojaSchema = new mongoose.Schema({
   dataCadastro: {
     type: Date,
     default: Date.now
+  },
+  nomeFantasia: {
+    type: String,
+    required: true
+  },
+  cnpj: {
+    type: String,
+    required: true,
+    unique: true 
+  },
+  telefone: {
+    type: String
+  },
+  imagem: {
+    type: String, 
+  },
+  endereco: {
+    cep: String,
+    logradouro: String,
+    numero: String,
+    complemento: String,
+    bairro: String,
+    cidade: String,
+    estado: String
   }
 });
 
-const Loja = mongoose.model('Loja', lojaSchema);
+const Loja = mongoose.models.Loja || mongoose.model('Loja', lojaSchema);
 
 module.exports = Loja;

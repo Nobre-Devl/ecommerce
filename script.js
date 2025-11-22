@@ -31,7 +31,7 @@ createApp({
       alerta: {
         visivel: false,
         mensagem: '',
-        tipo: 'success' 
+        tipo: 'success'
       }
     };
   },
@@ -98,9 +98,21 @@ createApp({
     async buscarProdutos() {
       const token = localStorage.getItem('auth-token');
       try {
-        const res = await fetch('http://localhost:2024/produtos', {
+        const res = await fetch('https://ecommerce-backend-green-iota.vercel.app/produtos', {
           headers: { 'auth-token': token }
         });
+        
+        // --- CORREÇÃO DE ERRO NO FETCH ---
+        if (!res.ok) {
+            // Trata erros de autenticação (401) ou servidor (500)
+            const erroData = await res.json();
+            this.mostrarAlerta('❌ Erro: ' + (erroData.message || 'Token expirado ou inválido'), 'error');
+            // Opcional: se o token falhou, redirecionar para login
+            // window.location.href = 'login.html';
+            return; 
+        }
+        // --- FIM DA CORREÇÃO ---
+        
         this.produtos = await res.json();
 
         const precos = this.produtos.map(p => p.preco);
@@ -109,9 +121,16 @@ createApp({
             this.precoMax = Math.max(...precos, 100);
             this.filtroPrecoMin = this.precoMin;
             this.filtroPrecoMax = this.precoMax;
+        } else {
+            // Garante que os valores iniciais de filtro sejam definidos
+            this.precoMin = 0;
+            this.precoMax = 100;
+            this.filtroPrecoMin = 0;
+            this.filtroPrecoMax = 100;
         }
       } catch (error) {
         console.error('Erro ao buscar:', error);
+        this.mostrarAlerta('❌ Falha ao conectar com o servidor.', 'error');
       }
     },
 
@@ -140,12 +159,10 @@ createApp({
       if (!this.mostrarForm) this.resetarFormulario();
     },
 
-    // --- CORREÇÃO PRINCIPAL AQUI ---
     async carregarImagem(event) {
       const file = event.target.files[0];
       if (!file) return;
 
-      // Opções de compressão
       const options = {
         maxSizeMB: 0.5, // Limita a 0.5MB (500KB) para ficar leve
         maxWidthOrHeight: 1200, // Redimensiona se for muito grande
@@ -155,10 +172,8 @@ createApp({
       try {
         this.mostrarAlerta('Processando imagem...', 'warning', 2000);
         
-        // Comprime a imagem usando a biblioteca que está no HTML
         const compressedFile = await imageCompression(file, options);
 
-        // Converte para Base64
         const reader = new FileReader();
         reader.onload = e => {
           this.novoProduto.imagem = e.target.result;
@@ -170,7 +185,6 @@ createApp({
         this.mostrarAlerta('Erro ao processar imagem.', 'error');
       }
     },
-    // -------------------------------
 
     async salvarProduto() {
       const token = localStorage.getItem('auth-token');
@@ -179,8 +193,8 @@ createApp({
 
       const metodo = this.editando ? 'PUT' : 'POST';
       const url = this.editando
-        ? `http://localhost:2024/produtos/${this.produtoEditandoId}`
-        : 'http://localhost:2024/produtos';
+        ? `https://ecommerce-backend-green-iota.vercel.app/produtos/${this.produtoEditandoId}`
+        : 'https://ecommerce-backend-green-iota.vercel.app/produtos';
 
       try {
         const res = await fetch(url, {
@@ -219,7 +233,7 @@ createApp({
       if (!confirm('Tem certeza que deseja excluir este produto?')) return;
 
       try {
-        const res = await fetch(`http://localhost:2024/produtos/${id}`, { 
+        const res = await fetch(`https://ecommerce-backend-green-iota.vercel.app/produtos/${id}`, { 
             method: 'DELETE',
             headers: { 'auth-token': token }
         });
@@ -228,7 +242,8 @@ createApp({
           this.mostrarAlerta('🗑️ Produto excluído!', 'success');
           this.buscarProdutos();
         } else {
-          this.mostrarAlerta('❌ Erro ao excluir produto.', 'error');
+          const erroData = await res.json();
+          this.mostrarAlerta('❌ ' + (erroData.message || 'Erro ao excluir produto.'), 'error');
         }
       } catch (error) {
         this.mostrarAlerta('❌ Erro de conexão.', 'error');

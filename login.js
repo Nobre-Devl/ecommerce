@@ -98,7 +98,7 @@ createApp({
 
     async register() {
       try {
-        const res = await fetch('http://localhost:2024/api/loja/register', {
+        const res = await fetch('https://ecommerce-backend-green-iota.vercel.app/api/loja/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(this.formData)
@@ -119,7 +119,7 @@ createApp({
 
     async login() {
       try {
-        const res = await fetch('http://localhost:2024/api/loja/login', {
+        const res = await fetch('https://ecommerce-backend-green-iota.vercel.app/api/loja/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

@@ -44,13 +44,20 @@ createApp({
     async buscarClientes() {
       const token = localStorage.getItem('auth-token');
       try {
-        const res = await fetch('http://localhost:2024/clientes', {
+        const res = await fetch('https://ecommerce-backend-green-iota.vercel.app/clientes', {
           headers: { 'auth-token': token }
         });
+        
+        // Verifica falha de autenticação ou servidor
+        if (!res.ok) {
+            const errorBody = await res.json();
+            throw new Error(errorBody.message || 'Falha ao autenticar ou buscar dados.');
+        }
+
         this.clientes = await res.json();
       } catch (error) {
-        console.error(error);
-        this.mostrarAlerta('Erro ao buscar clientes.', 'error');
+        console.error('Erro ao buscar clientes:', error);
+        this.mostrarAlerta(`❌ ${error.message || 'Erro ao buscar clientes.'}`, 'error');
       }
     },
 
@@ -58,8 +65,8 @@ createApp({
       const token = localStorage.getItem('auth-token');
       const metodo = this.editando ? 'PUT' : 'POST';
       const url = this.editando 
-        ? `http://localhost:2024/clientes/${this.clienteEditandoId}` 
-        : 'http://localhost:2024/clientes';
+        ? `https://ecommerce-backend-green-iota.vercel.app/clientes/${this.clienteEditandoId}` 
+        : 'https://ecommerce-backend-green-iota.vercel.app/clientes';
 
       try {
         const res = await fetch(url, {
@@ -71,15 +78,20 @@ createApp({
           body: JSON.stringify(this.novoCliente)
         });
 
+        // 🚨 MELHORIA AQUI: Leitura e exibição do erro detalhado do Backend
+        if (!res.ok) {
+            const errorBody = await res.json();
+            throw new Error(errorBody.message || 'Erro de validação ou de servidor.');
+        }
+
         if (res.ok) {
-          this.mostrarAlerta(this.editando ? 'Cliente atualizado!' : 'Cliente cadastrado!');
+          this.mostrarAlerta(this.editando ? '✅ Cliente atualizado!' : '✅ Cliente cadastrado!');
           this.buscarClientes();
           this.toggleForm();
-        } else {
-          this.mostrarAlerta('Erro ao salvar.', 'error');
-        }
+        } 
       } catch (error) {
-        this.mostrarAlerta('Erro de conexão.', 'error');
+        // Exibe a mensagem de erro exata (se for de validação)
+        this.mostrarAlerta(`❌ ${error.message || 'Erro de conexão.'}`, 'error');
       }
     },
 
@@ -88,19 +100,22 @@ createApp({
       const token = localStorage.getItem('auth-token');
       
       try {
-        const res = await fetch(`http://localhost:2024/clientes/${id}`, {
+        const res = await fetch(`https://ecommerce-backend-green-iota.vercel.app/clientes/${id}`, {
           method: 'DELETE',
           headers: { 'auth-token': token }
         });
 
-        if (res.ok) {
-          this.mostrarAlerta('Cliente removido!');
-          this.buscarClientes();
-        } else {
-          this.mostrarAlerta('Erro ao excluir.', 'error');
+        if (!res.ok) {
+            const errorBody = await res.json();
+            throw new Error(errorBody.message || 'Falha ao deletar.');
         }
+
+        if (res.ok) {
+          this.mostrarAlerta('🗑️ Cliente removido!');
+          this.buscarClientes();
+        } 
       } catch (error) {
-        this.mostrarAlerta('Erro de conexão.', 'error');
+        this.mostrarAlerta(`❌ ${error.message || 'Erro de conexão.'}`, 'error');
       }
     },
 
